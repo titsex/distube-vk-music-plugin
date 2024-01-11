@@ -54,32 +54,35 @@ client.login('bot token')
 
 # Example of plugin error handling
 ```ts
-import { VK_PLUGIN_ERROR_CODE, VKErrors } from 'distube-vk-music-plugin'
+import { VK_PLUGIN_ERROR_CODE, VKMusicPluginErrors } from 'distube-vk-music-plugin'
 import { DisTubeError } from 'distube'
 
 client.on('error', (error) => {
     if (error instanceof DisTubeError) {
         if (error.errorCode === VK_PLUGIN_ERROR_CODE) {
-            switch (error.message as VKErrors) {
-                case VKErrors.PLAYLIST_NOT_FOUND:
+            switch (error.message as VKMusicPluginErrors) {
+                case VKMusicPluginErrors.PLAYLIST_NOT_FOUND:
                     // code here...
                     break
-                case VKErrors.PLAYLIST_SONGS_NOT_FOUND:
+                case VKMusicPluginErrors.PLAYLIST_SONGS_NOT_FOUND:
                     // code here...
                     break
-                case VKErrors.ARTIST_NOT_FOUND:
+                case VKMusicPluginErrors.ARTIST_NOT_FOUND:
                     // code here...
                     break
-                case VKErrors.ARTIST_SONGS_NOT_FOUND:
+                case VKMusicPluginErrors.ARTIST_SONGS_NOT_FOUND:
                     // code here...
                     break
-                case VKErrors.AUDIO_NOT_FOUND:
+                case VKMusicPluginErrors.AUDIO_NOT_FOUND:
                     // code here...
                     break
-                case VKErrors.USER_OR_GROUP_NOT_FOUND:
+                case VKMusicPluginErrors.USER_OR_GROUP_NOT_FOUND:
                     // code here...
                     break
-                case VKErrors.URL_NOT_SUPPORT:
+                case VKMusicPluginErrors.URL_NOT_SUPPORT:
+                    // code here...
+                    break
+                case VKMusicPluginErrors.ACCESS_DENIED:
                     // code here...
                     break
                 default:
