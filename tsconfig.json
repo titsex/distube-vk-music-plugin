@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "lib": ["ESNext"],
+    "target": "ES2022",
+    "outDir": "dist",
+    "strict": true,
+    "noEmit": true,
+    "rootDir": "src",
+    "useUnknownInCatchVariables": false,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@handlers": ["src/handlers"],
+      "@types": ["src/types"],
+      "@plugin": ["src/plugin"],
+      "@utils": ["src/utils"],
+      "@api": ["src/api"],
+      "@constant": ["src/constant"]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules"]
+}
