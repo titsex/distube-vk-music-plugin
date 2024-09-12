@@ -1,95 +1,77 @@
-import { VKMusicPluginOptions, VKMusicPluginResolveOptions, VKMusicPluginErrors, IVKUser, IVKGroup } from '@types'
-import { fetchGroupInfo, fetchPlaylistSongs, fetchSong, fetchUserInfo, fetchUserOrGroup } from '@api'
-import { parseSongParams, getLinkType, getParamsByURL, parseURL, convertSongs } from '@utils'
-import { DisTubeError, ExtractorPlugin, Playlist, Song } from 'distube'
-import { VK_PLUGIN_ERROR_CODE, VK_PLUGIN_SOURCE } from '@constant'
-import { artistHandler, playlistHandler } from '@handlers'
+import {
+	type VKMusicPluginOptions,
+	VKMusicPluginPlaylist,
+	VKMusicPluginSong,
+	VKMusicPluginErrors,
+} from './types'
 
-class VKMusicPlugin extends ExtractorPlugin {
-    public static token: string
+import { DisTubeError, PlayableExtractorPlugin, type ResolveOptions } from 'distube'
+import { VK_MUSIC_PLUGIN_SOURCE, VK_PLUGIN_ERROR_CODE } from './constant'
+import { getLinkType, getParamsByURL, parseURL } from './utils'
+import { VKMusicAPI } from 'vk-music-api-wrapper'
+import { VKMusicPlaylist } from './api'
 
-    constructor(options: VKMusicPluginOptions) {
-        super()
+class VKMusicPlugin extends PlayableExtractorPlugin {
+	private readonly vk: VKMusicAPI
 
-        if (typeof options !== 'object' || Array.isArray(options))
-            throw new DisTubeError('INVALID_TYPE', ['object', 'undefined'], options, 'VKMusicPluginOptions')
+	constructor(options: VKMusicPluginOptions) {
+		super()
 
-        VKMusicPlugin.token = options.token
-    }
+		if (typeof options !== 'object' || Array.isArray(options)) {
+			throw new DisTubeError(
+				'INVALID_TYPE',
+				['object', 'undefined'],
+				options,
+				'VKMusicPluginOptions'
+			)
+		}
 
-    override async validate(url: string): Promise<boolean> {
-        return url.includes('vk.com')
-    }
+		this.vk = new VKMusicAPI({
+			token: options.token,
+		})
+	}
 
-    override async resolve<T>(url: string, options: VKMusicPluginResolveOptions): Promise<Playlist<T> | Song<T>> {
-        url = parseURL(url)
+	async validate(url: string): Promise<boolean> {
+		return url.includes('vk.com')
+	}
 
-        const linkType = getLinkType(url)
-        const paramsList = getParamsByURL(url, linkType)
+	async resolve<T>(url: string, options: ResolveOptions<T>) {
+		const parsedUrl = parseURL(url)
 
-        try {
-            if (linkType === 'playlist') {
-                const [playlist, songs] = await playlistHandler(paramsList, options.member!)
+		const linkType = getLinkType(parsedUrl)
+		const paramsList = getParamsByURL(parsedUrl, linkType)
 
-                return new Playlist({
-                    url,
-                    name: playlist.title,
-                    source: VK_PLUGIN_SOURCE,
-                    songs,
-                    thumbnail: playlist.photo.photo_1200,
-                })
-            }
+		const playlistApi = new VKMusicPlaylist(this.vk)
 
-            if (linkType === 'artist') {
-                const [artist, songs] = await artistHandler(paramsList, options.member!)
+		const params = {
+			owner_id: paramsList[0],
+			playlist_id: paramsList[1],
+			album_id: paramsList[1],
+		}
 
-                return new Playlist({
-                    url,
-                    name: artist.name,
-                    source: VK_PLUGIN_SOURCE,
-                    songs,
-                    thumbnail: 'groups' in artist ? artist.groups![0].photo_200 : '',
-                })
-            }
+		const songs = (await playlistApi.getAllSongs(params)).map(
+			(song) => new VKMusicPluginSong<T>(this, song, options)
+		)
 
-            if (linkType === 'audio') {
-                const audio = await fetchSong(parseSongParams(paramsList))
+		const playlistInfo = await this.vk.audio.getPlaylistById(params)
 
-                return new Song({
-                    url: audio.url,
-                    name: `${audio.artist} - ${audio.title}`,
-                    member: options.member,
-                    src: VK_PLUGIN_SOURCE,
-                    duration: audio.duration,
-                })
-            }
+		return new VKMusicPluginPlaylist<T>(playlistInfo, url, songs, options)
+	}
 
-            const { object_id: id, type } = await fetchUserOrGroup(paramsList[0])
+	getRelatedSongs() {
+		return []
+	}
 
-            const info = type === 'user' ? await fetchUserInfo(id) : await fetchGroupInfo(id)
-            const songs = await fetchPlaylistSongs({ owner_id: `${type === 'user' ? '' : '-'}${id}` })
+	getStreamURL<T>(song: VKMusicPluginSong<T>) {
+		if (!song.url) {
+			throw new DisTubeError(
+				VK_MUSIC_PLUGIN_SOURCE,
+				'Cannot get stream url from invalid song.'
+			)
+		}
 
-            let name: string
-
-            if (type === 'user') {
-                const userInfo = info as IVKUser
-                name = `${userInfo.first_name} ${userInfo.last_name}`
-            } else {
-                const groupInfo = info as IVKGroup
-                name = groupInfo.name
-            }
-
-            return new Playlist({
-                url,
-                name,
-                source: VK_PLUGIN_SOURCE,
-                songs: convertSongs(songs, options.member),
-                thumbnail: info.photo_200,
-            })
-        } catch (error) {
-            throw new DisTubeError(VK_PLUGIN_ERROR_CODE, error.message)
-        }
-    }
+		return song.url
+	}
 }
 
 export { VKMusicPlugin, VKMusicPluginErrors, VK_PLUGIN_ERROR_CODE }
