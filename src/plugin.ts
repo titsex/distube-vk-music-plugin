@@ -124,4 +124,4 @@ class VKMusicPlugin extends PlayableExtractorPlugin {
 	}
 }
 
-export { VKMusicPlugin, VKMusicPluginErrors }
+export { VKMusicPlugin, VKMusicPluginErrors, VK_MUSIC_PLUGIN_SOURCE }
