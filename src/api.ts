@@ -1,154 +1,188 @@
-import axios from 'axios'
+import type {
+	VKMusicAPI,
+	VKMusicAudioArtist,
+	VKMusicAudioGetArtistByIdMethodParams,
+	VKMusicAudioGetAudiosByArtistMethodParams,
+	VKMusicAudioGetByIdMethodParams,
+	VKMusicAudioGetMethodParams,
+	VKMusicAudioGetPlaylistByIdMethodParams,
+	VKMusicAudioPlaylist,
+	VKMusicAudioSong,
+} from 'vk-music-api-wrapper'
 
-import {
-    IFetchVKPlaylistParams,
-    IVKResolvedScreenName,
-    VKMusicPluginErrors,
-    RequestMethodType,
-    IAudioGetResponse,
-    VKAPIErrorCodes,
-    IVKResponse,
-    IVKPlaylist,
-    IVKArtist,
-    IVKGroup,
-    IVKSong,
-    IVKUser,
-} from '@types'
+import { VKMusicPluginErrors } from './types'
 
-import { VK_API_URL, VK_API_VERSION, VK_USER_AGENT } from '@constant'
-import { VKMusicPlugin } from '@plugin'
+export async function getPlaylistAndSongs(
+	vk: VKMusicAPI,
+	params: VKMusicAudioGetMethodParams & VKMusicAudioGetPlaylistByIdMethodParams
+): Promise<[playlist: VKMusicAudioPlaylist, songs: VKMusicAudioSong[]]> {
+	const playlist = await vk.audio.getPlaylistById(params)
 
-export const api = axios.create({
-    baseURL: VK_API_URL,
-    timeout: 1500,
-})
+	if (!playlist) {
+		throw new Error(VKMusicPluginErrors.PLAYLIST_NOT_FOUND)
+	}
 
-api.interceptors.request.use((config) => {
-    config.url = config.url += `?v=${VK_API_VERSION}&access_token=${VKMusicPlugin.token}`
-    config.headers['User-Agent'] = VK_USER_AGENT
+	let offset = 0
 
-    const params = config.params
+	let response = await vk.audio.get({
+		count: 5000,
+		...params,
+		offset,
+	})
 
-    for (const param in params) {
-        if (!param || !params[param]) continue
-        config.url += `&${param}=${params[param]}`
-    }
+	const songs = []
+	const totalSongsCount = response.count
 
-    return config
-})
+	if (!totalSongsCount) {
+		throw new Error(VKMusicPluginErrors.PLAYLIST_SONGS_NOT_FOUND)
+	}
 
-export async function makeRequest<T>(method: RequestMethodType, params: unknown) {
-    const { data } = await api.get<IVKResponse<T>>(method, {
-        params,
-    })
+	songs.push(...response.items)
+	offset += songs.length
 
-    if (data.error?.error_code === VKAPIErrorCodes.ACCESS_DENIED) throw new Error(VKMusicPluginErrors.ACCESS_DENIED)
-    if (data.error?.error_code === VKAPIErrorCodes.INVALID_PARAMS) throw new Error(VKMusicPluginErrors.URL_NOT_SUPPORT)
+	while (totalSongsCount > songs.length) {
+		response = await vk.audio.get({
+			count: 5000,
+			...params,
+			offset,
+		})
 
-    return data.response
+		if (!response || !response.items.length) {
+			break
+		}
+
+		songs.push(...response.items)
+		offset += songs.length
+	}
+
+	return [playlist, songs]
 }
 
-export async function fetchUserOrGroup(screen_name: string) {
-    const response = await makeRequest<IVKResolvedScreenName>('utils.resolveScreenName', {
-        screen_name,
-    })
+export async function getArtistAndSongs(
+	vk: VKMusicAPI,
+	params: VKMusicAudioGetAudiosByArtistMethodParams & VKMusicAudioGetArtistByIdMethodParams
+): Promise<[artist: VKMusicAudioArtist, songs: VKMusicAudioSong[]]> {
+	const artist = await vk.audio.getArtistById(params)
 
-    if (Array.isArray(response)) throw new Error(VKMusicPluginErrors.USER_OR_GROUP_NOT_FOUND)
-    if (!['user', 'group'].includes(response.type)) throw new Error(VKMusicPluginErrors.URL_NOT_SUPPORT)
+	if (!artist || !artist.name) {
+		throw new Error(VKMusicPluginErrors.ARTIST_NOT_FOUND)
+	}
 
-    return response
+	let offset = 0
+
+	let response = await vk.audio.getAudiosByArtist({
+		count: 5000,
+		...params,
+		offset,
+	})
+
+	const songs = []
+	const totalSongsCount = response.count
+
+	if (!totalSongsCount) {
+		throw new Error(VKMusicPluginErrors.ARTIST_SONGS_NOT_FOUND)
+	}
+
+	songs.push(...response.items)
+	offset += songs.length
+
+	while (totalSongsCount > songs.length) {
+		response = await vk.audio.getAudiosByArtist({
+			count: 5000,
+			...params,
+			offset,
+		})
+
+		if (!response || !response.items.length) {
+			break
+		}
+
+		songs.push(...response.items)
+		offset += songs.length
+	}
+
+	return [artist, songs]
 }
 
-export async function fetchUserInfo(user_id: number) {
-    const response = await makeRequest<IVKUser[]>('users.get', {
-        fields: 'photo_200',
-        user_id,
-    })
+export async function getUserOrGroupSongs(
+	vk: VKMusicAPI,
+	screen_name: string
+): Promise<[owner_id: string, songs: VKMusicAudioSong[]]> {
+	const params = await vk.resolveScreenName(screen_name)
 
-    return response[0]
+	if (Array.isArray(params)) {
+		throw new Error(VKMusicPluginErrors.USER_OR_GROUP_NOT_FOUND)
+	}
+
+	if (!['group', 'user'].includes(params.type)) {
+		throw new Error(VKMusicPluginErrors.URL_NOT_SUPPORT)
+	}
+
+	const owner_id = `${params.type === 'group' ? '-' : ''}${params.object_id}`
+
+	let offset = 0
+
+	let response = await vk.audio.get({
+		count: 5000,
+		owner_id,
+		offset,
+	})
+
+	const songs = []
+	const totalSongsCount = response.count
+
+	if (!totalSongsCount) {
+		throw new Error(
+			params.type === 'group'
+				? VKMusicPluginErrors.GROUP_SONGS_NOT_FOUND
+				: VKMusicPluginErrors.USER_SONGS_NOT_FOUND
+		)
+	}
+
+	songs.push(...response.items)
+	offset += songs.length
+
+	while (totalSongsCount > songs.length) {
+		response = await vk.audio.get({
+			count: 5000,
+			owner_id,
+			offset,
+		})
+
+		if (!response || !response.items.length) {
+			break
+		}
+
+		songs.push(...response.items)
+		offset += songs.length
+	}
+
+	return [owner_id, songs]
 }
 
-export async function fetchGroupInfo(group_id: number) {
-    const response = await makeRequest<{ groups: IVKGroup[] }>('groups.getById', {
-        fields: 'photo_200',
-        group_id,
-    })
+export async function fetchSong(
+	vk: VKMusicAPI,
+	params: VKMusicAudioGetByIdMethodParams
+): Promise<VKMusicAudioSong> {
+	const songs = await vk.audio.getById([params])
 
-    return response.groups[0]
+	if (!songs || !songs.length) {
+		throw new Error(VKMusicPluginErrors.SONG_NOT_FOUND)
+	}
+
+	return songs[0]
 }
 
-export async function fetchPlaylistInfo(params: IFetchVKPlaylistParams) {
-    const response = await makeRequest<IVKPlaylist>('audio.getPlaylistById', params)
+export async function fetchRelatedSongs(
+	vk: VKMusicAPI,
+	params: VKMusicAudioGetByIdMethodParams
+): Promise<VKMusicAudioSong[]> {
+	const response = await vk.audio.getRecommendations({
+		target_audio: params,
+		count: 10,
+	})
 
-    if (!response) throw new Error(VKMusicPluginErrors.PLAYLIST_NOT_FOUND)
+	if (!response || !response?.items) return []
 
-    return response
-}
-
-export async function fetchSong(audio: string) {
-    const response = await makeRequest<IVKSong[]>('audio.getById', {
-        audios: audio,
-    })
-
-    if (!response.length) throw new Error(VKMusicPluginErrors.AUDIO_NOT_FOUND)
-
-    return response[0]
-}
-
-export async function fetchPlaylistSongs(params: IFetchVKPlaylistParams) {
-    const queryParams = {
-        offset: 0,
-        ...params,
-    }
-
-    const audios: IVKSong[] = []
-
-    const response = await makeRequest<IAudioGetResponse>('audio.get', queryParams)
-    const totalAudiosCount = response.count
-
-    audios.push(...response.items)
-    queryParams.offset = audios.length
-
-    while (totalAudiosCount > audios.length) {
-        const response = await makeRequest<IAudioGetResponse>('audio.get', queryParams)
-
-        audios.push(...response.items)
-        queryParams.offset = audios.length
-    }
-
-    return audios
-}
-
-export async function fetchArtist(artist_id: string) {
-    const response = await makeRequest<IVKArtist>('audio.getArtistById', {
-        artist_id,
-    })
-
-    if (!response.name) throw new Error(VKMusicPluginErrors.ARTIST_NOT_FOUND)
-
-    return response
-}
-
-export async function fetchArtistSongs(artist_id: string) {
-    const queryParams = {
-        offset: 0,
-        artist_id,
-    }
-
-    const audios: IVKSong[] = []
-
-    const response = await makeRequest<IAudioGetResponse>('audio.getAudiosByArtist', queryParams)
-    const totalAudiosCount = response.count
-
-    audios.push(...response.items)
-    queryParams.offset = audios.length
-
-    while (totalAudiosCount > audios.length) {
-        const response = await makeRequest<IAudioGetResponse>('audio.getAudiosByArtist', queryParams)
-
-        audios.push(...response.items)
-        queryParams.offset = audios.length
-    }
-
-    return audios
+	return response.items
 }

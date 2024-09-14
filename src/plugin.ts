@@ -1,95 +1,127 @@
-import { VKMusicPluginOptions, VKMusicPluginResolveOptions, VKMusicPluginErrors, IVKUser, IVKGroup } from '@types'
-import { fetchGroupInfo, fetchPlaylistSongs, fetchSong, fetchUserInfo, fetchUserOrGroup } from '@api'
-import { parseSongParams, getLinkType, getParamsByURL, parseURL, convertSongs } from '@utils'
-import { DisTubeError, ExtractorPlugin, Playlist, Song } from 'distube'
-import { VK_PLUGIN_ERROR_CODE, VK_PLUGIN_SOURCE } from '@constant'
-import { artistHandler, playlistHandler } from '@handlers'
+import {
+	type VKMusicPluginOptions,
+	VKMusicPluginUserOrGroup,
+	VKMusicPluginPlaylist,
+	VKMusicPluginErrors,
+	VKMusicPluginArtist,
+	VKMusicPluginSong,
+} from './types'
 
-class VKMusicPlugin extends ExtractorPlugin {
-    public static token: string
+import {
+	getPlaylistAndSongs,
+	getArtistAndSongs,
+	fetchSong,
+	fetchRelatedSongs,
+	getUserOrGroupSongs,
+} from './api'
 
-    constructor(options: VKMusicPluginOptions) {
-        super()
+import { DisTubeError, PlayableExtractorPlugin, type ResolveOptions } from 'distube'
+import { VKMusicAPI, VKMusicAPIBool } from 'vk-music-api-wrapper'
+import { getLinkType, getParamsByURL, parseURL } from './utils'
+import { VK_MUSIC_PLUGIN_SOURCE } from './constant'
 
-        if (typeof options !== 'object' || Array.isArray(options))
-            throw new DisTubeError('INVALID_TYPE', ['object', 'undefined'], options, 'VKMusicPluginOptions')
+class VKMusicPlugin extends PlayableExtractorPlugin {
+	private readonly vk: VKMusicAPI
 
-        VKMusicPlugin.token = options.token
-    }
+	constructor(options: VKMusicPluginOptions) {
+		super()
 
-    override async validate(url: string): Promise<boolean> {
-        return url.includes('vk.com')
-    }
+		if (typeof options !== 'object' || Array.isArray(options)) {
+			throw new DisTubeError(
+				'INVALID_TYPE',
+				['object', 'undefined'],
+				options,
+				'VKMusicPluginOptions'
+			)
+		}
 
-    override async resolve<T>(url: string, options: VKMusicPluginResolveOptions): Promise<Playlist<T> | Song<T>> {
-        url = parseURL(url)
+		this.vk = new VKMusicAPI({
+			token: options.token,
+		})
+	}
 
-        const linkType = getLinkType(url)
-        const paramsList = getParamsByURL(url, linkType)
+	async validate(url: string): Promise<boolean> {
+		return url.includes('vk.com')
+	}
 
-        try {
-            if (linkType === 'playlist') {
-                const [playlist, songs] = await playlistHandler(paramsList, options.member!)
+	async resolve<T>(url: string, options: ResolveOptions<T>) {
+		try {
+			const parsedUrl = parseURL(url)
 
-                return new Playlist({
-                    url,
-                    name: playlist.title,
-                    source: VK_PLUGIN_SOURCE,
-                    songs,
-                    thumbnail: playlist.photo.photo_1200,
-                })
-            }
+			const linkType = getLinkType(parsedUrl)
+			const paramsList = getParamsByURL(parsedUrl, linkType)
 
-            if (linkType === 'artist') {
-                const [artist, songs] = await artistHandler(paramsList, options.member!)
+			if (linkType === 'playlist') {
+				const [playlist, songs] = await getPlaylistAndSongs(this.vk, {
+					owner_id: paramsList[0],
+					playlist_id: paramsList[1],
+					album_id: paramsList[1],
+				})
 
-                return new Playlist({
-                    url,
-                    name: artist.name,
-                    source: VK_PLUGIN_SOURCE,
-                    songs,
-                    thumbnail: 'groups' in artist ? artist.groups![0].photo_200 : '',
-                })
-            }
+				return new VKMusicPluginPlaylist<T>(
+					playlist,
+					url,
+					songs.map((song) => new VKMusicPluginSong<T>(this, song, options)),
+					options
+				)
+			}
 
-            if (linkType === 'audio') {
-                const audio = await fetchSong(parseSongParams(paramsList))
+			if (linkType === 'artist') {
+				const [artist, songs] = await getArtistAndSongs(this.vk, {
+					artist_id: paramsList[0],
+					extended: VKMusicAPIBool.TRUE,
+				})
 
-                return new Song({
-                    url: audio.url,
-                    name: `${audio.artist} - ${audio.title}`,
-                    member: options.member,
-                    src: VK_PLUGIN_SOURCE,
-                    duration: audio.duration,
-                })
-            }
+				return new VKMusicPluginArtist<T>(
+					artist,
+					url,
+					songs.map((song) => new VKMusicPluginSong<T>(this, song, options)),
+					options
+				)
+			}
 
-            const { object_id: id, type } = await fetchUserOrGroup(paramsList[0])
+			if (linkType === 'song') {
+				const song = await fetchSong(this.vk, {
+					owner_id: paramsList[0],
+					id: paramsList[1],
+					access_key: paramsList[2],
+				})
 
-            const info = type === 'user' ? await fetchUserInfo(id) : await fetchGroupInfo(id)
-            const songs = await fetchPlaylistSongs({ owner_id: `${type === 'user' ? '' : '-'}${id}` })
+				return new VKMusicPluginSong<T>(this, song, options)
+			}
 
-            let name: string
+			const [owner_id, songs] = await getUserOrGroupSongs(this.vk, paramsList[0])
 
-            if (type === 'user') {
-                const userInfo = info as IVKUser
-                name = `${userInfo.first_name} ${userInfo.last_name}`
-            } else {
-                const groupInfo = info as IVKGroup
-                name = groupInfo.name
-            }
+			return new VKMusicPluginUserOrGroup<T>(
+				owner_id,
+				url,
+				songs.map((song) => new VKMusicPluginSong<T>(this, song, options)),
+				options
+			)
+		} catch (error) {
+			throw new DisTubeError(VK_MUSIC_PLUGIN_SOURCE, error.message)
+		}
+	}
 
-            return new Playlist({
-                url,
-                name,
-                source: VK_PLUGIN_SOURCE,
-                songs: convertSongs(songs, options.member),
-                thumbnail: info.photo_200,
-            })
-        } catch (error) {
-            throw new DisTubeError(VK_PLUGIN_ERROR_CODE, error.message)
-        }
-    }
+	async getRelatedSongs<T>(song: VKMusicPluginSong<T>) {
+		const [owner_id, id, access_key] = song.id.split('_')
+
+		const songs = await fetchRelatedSongs(this.vk, {
+			owner_id,
+			id,
+			access_key,
+		})
+
+		return songs.map((song) => new VKMusicPluginSong(this, song))
+	}
+
+	getStreamURL<T>(song: VKMusicPluginSong<T>) {
+		if (!song.url) {
+			throw new DisTubeError(VK_MUSIC_PLUGIN_SOURCE, VKMusicPluginErrors.SONG_NOT_FOUND)
+		}
+
+		return song.url
+	}
 }
 
-export { VKMusicPlugin, VKMusicPluginErrors, VK_PLUGIN_ERROR_CODE }
+export { VKMusicPlugin, VKMusicPluginErrors, VK_MUSIC_PLUGIN_SOURCE }
