@@ -9,8 +9,8 @@ export class VKMusicPluginSong<T> extends DistubeSong<T> {
 			{
 				plugin,
 				source: VK_MUSIC_PLUGIN_SOURCE,
-				playFromSource: false,
-				id: info.id.toString(),
+				playFromSource: true,
+				id: `${info.owner_id}_${info.id}${info.access_key ? `_${info.access_key}` : ''}`,
 				url: info.url,
 				name: info.title,
 				duration: info.duration,

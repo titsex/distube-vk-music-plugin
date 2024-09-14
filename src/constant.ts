@@ -1,5 +1,4 @@
-export const VK_PLUGIN_ERROR_CODE = 'VK_MUSIC_PLUGIN_ERROR'
-export const VK_MUSIC_PLUGIN_SOURCE = 'vk-music'
+export const VK_MUSIC_PLUGIN_SOURCE = 'vk-music-plugin'
 
 export const IS_PLAYLIST_OR_ALBUM_REGEX =
 	/(?:playlist|album)(?:\/|)((?:-|)\d+)_((?:-|)\d+)(?:_(\w+)|)/i

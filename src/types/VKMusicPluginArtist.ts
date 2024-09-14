@@ -1,11 +1,11 @@
 import { Playlist as DistubePlaylist, type ResolveOptions } from 'distube'
-import type { VKMusicAudioPlaylist } from 'vk-music-api-wrapper'
+import type { VKMusicAudioArtist } from 'vk-music-api-wrapper'
 import type { VKMusicPluginSong } from './VKMusicPluginSong'
 import { VK_MUSIC_PLUGIN_SOURCE } from '../constant'
 
-export class VKMusicPluginPlaylist<T> extends DistubePlaylist<T> {
+export class VKMusicPluginArtist<T> extends DistubePlaylist<T> {
 	constructor(
-		info: VKMusicAudioPlaylist,
+		info: VKMusicAudioArtist,
 		url: string,
 		songs: VKMusicPluginSong<T>[],
 		options: ResolveOptions<T> = {}
@@ -16,8 +16,8 @@ export class VKMusicPluginPlaylist<T> extends DistubePlaylist<T> {
 				url,
 				source: VK_MUSIC_PLUGIN_SOURCE,
 				id: info.id.toString(),
-				name: info.title,
-				thumbnail: info?.photo?.photo_1200,
+				name: info.name,
+				thumbnail: info?.photo?.at(-1)?.url || info?.group?.at(0)?.photo_200 || undefined,
 			},
 			options
 		)
