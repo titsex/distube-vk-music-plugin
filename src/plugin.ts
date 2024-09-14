@@ -1,12 +1,20 @@
 import {
 	type VKMusicPluginOptions,
+	VKMusicPluginUserOrGroup,
 	VKMusicPluginPlaylist,
 	VKMusicPluginErrors,
 	VKMusicPluginArtist,
 	VKMusicPluginSong,
 } from './types'
 
-import { getPlaylistAndSongs, getArtistAndSongs, fetchSong, fetchRelatedSongs } from './api'
+import {
+	getPlaylistAndSongs,
+	getArtistAndSongs,
+	fetchSong,
+	fetchRelatedSongs,
+	getUserOrGroupSongs,
+} from './api'
+
 import { DisTubeError, PlayableExtractorPlugin, type ResolveOptions } from 'distube'
 import { VKMusicAPI, VKMusicAPIBool } from 'vk-music-api-wrapper'
 import { getLinkType, getParamsByURL, parseURL } from './utils'
@@ -37,51 +45,62 @@ class VKMusicPlugin extends PlayableExtractorPlugin {
 	}
 
 	async resolve<T>(url: string, options: ResolveOptions<T>) {
-		const parsedUrl = parseURL(url)
+		try {
+			const parsedUrl = parseURL(url)
 
-		const linkType = getLinkType(parsedUrl)
-		const paramsList = getParamsByURL(parsedUrl, linkType)
+			const linkType = getLinkType(parsedUrl)
+			const paramsList = getParamsByURL(parsedUrl, linkType)
 
-		if (linkType === 'playlist') {
-			const [playlist, songs] = await getPlaylistAndSongs(this.vk, {
-				owner_id: paramsList[0],
-				playlist_id: paramsList[1],
-				album_id: paramsList[1],
-			})
+			if (linkType === 'playlist') {
+				const [playlist, songs] = await getPlaylistAndSongs(this.vk, {
+					owner_id: paramsList[0],
+					playlist_id: paramsList[1],
+					album_id: paramsList[1],
+				})
 
-			return new VKMusicPluginPlaylist<T>(
-				playlist,
+				return new VKMusicPluginPlaylist<T>(
+					playlist,
+					url,
+					songs.map((song) => new VKMusicPluginSong<T>(this, song, options)),
+					options
+				)
+			}
+
+			if (linkType === 'artist') {
+				const [artist, songs] = await getArtistAndSongs(this.vk, {
+					artist_id: paramsList[0],
+					extended: VKMusicAPIBool.TRUE,
+				})
+
+				return new VKMusicPluginArtist<T>(
+					artist,
+					url,
+					songs.map((song) => new VKMusicPluginSong<T>(this, song, options)),
+					options
+				)
+			}
+
+			if (linkType === 'song') {
+				const song = await fetchSong(this.vk, {
+					owner_id: paramsList[0],
+					id: paramsList[1],
+					access_key: paramsList[2],
+				})
+
+				return new VKMusicPluginSong<T>(this, song, options)
+			}
+
+			const [owner_id, songs] = await getUserOrGroupSongs(this.vk, paramsList[0])
+
+			return new VKMusicPluginUserOrGroup<T>(
+				owner_id,
 				url,
 				songs.map((song) => new VKMusicPluginSong<T>(this, song, options)),
 				options
 			)
+		} catch (error) {
+			throw new DisTubeError(VK_MUSIC_PLUGIN_SOURCE, error.message)
 		}
-
-		if (linkType === 'artist') {
-			const [artist, songs] = await getArtistAndSongs(this.vk, {
-				artist_id: paramsList[0],
-				extended: VKMusicAPIBool.TRUE,
-			})
-
-			return new VKMusicPluginArtist<T>(
-				artist,
-				url,
-				songs.map((song) => new VKMusicPluginSong<T>(this, song, options)),
-				options
-			)
-		}
-
-		if (linkType === 'song') {
-			const song = await fetchSong(this.vk, {
-				owner_id: paramsList[0],
-				id: paramsList[1],
-				access_key: paramsList[2],
-			})
-
-			return new VKMusicPluginSong<T>(this, song, options)
-		}
-
-		throw new DisTubeError(VK_MUSIC_PLUGIN_SOURCE, VKMusicPluginErrors.URL_NOT_SUPPORT)
 	}
 
 	async getRelatedSongs<T>(song: VKMusicPluginSong<T>) {

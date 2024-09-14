@@ -1,3 +1,4 @@
+export * from './VKMusicPluginUserOrGroup'
 export * from './VKMusicPluginPlaylist'
 export * from './VKMusicPluginArtist'
 export * from './VKMusicPluginSong'
@@ -9,8 +10,9 @@ export enum VKMusicPluginErrors {
 	ARTIST_SONGS_NOT_FOUND = 'The artist does not have any songs on the specified link',
 	SONG_NOT_FOUND = 'Song on the specified link was not found',
 	USER_OR_GROUP_NOT_FOUND = 'The user or community you specified was not found',
+	USER_SONGS_NOT_FOUND = "The user's songs were not found at the specified link",
+	GROUP_SONGS_NOT_FOUND = "The group's songs were not found at the specified link",
 	URL_NOT_SUPPORT = 'Invalid link format. You can specify links to playlists, albums, artists, users, communities and songs',
-	ACCESS_DENIED = 'The user or the community has no access to song',
 }
 
 export type LinkType = 'playlist' | 'song' | 'artist' | 'userOrGroup'

@@ -13,12 +13,14 @@
 Custom Distube plugin for VK Music support.
 
 # Feature
-| type         | example link                                    | ☑️ |
-|--------------|-------------------------------------------------|----|
-| playlist     | https://vk.com/music/playlist/-192000782_406    | ✅  |
-| album        | https://vk.com/music/album/-2000892528_18892528 | ✅  |
-| artist       | https://vk.com/artist/nepridymal_mty0oty4odm2mw | ✅  |
-| audio        | https://vk.com/audio-2001624323_122624323       | ✅  |
+| type     | example link                                    | ☑️ |
+|----------|-------------------------------------------------|----|
+| playlist | https://vk.com/music/playlist/-192000782_406    | ✅  |
+| album    | https://vk.com/music/album/-2000892528_18892528 | ✅  |
+| artist   | https://vk.com/artist/nepridymal_mty0oty4odm2mw | ✅  |
+| audio    | https://vk.com/audio-2001624323_122624323       | ✅  |
+| group    | https://vk.com/titsex                           | ✅  |
+| user     | https://vk.com/ne_pridymal_group                | ✅  |
 
 # Installation
 ```

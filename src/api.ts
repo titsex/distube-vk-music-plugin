@@ -1,13 +1,13 @@
 import type {
-	VKMusicAudioGetAudiosByArtistMethodParams,
-	VKMusicAudioGetPlaylistByIdMethodParams,
+	VKMusicAPI,
+	VKMusicAudioArtist,
 	VKMusicAudioGetArtistByIdMethodParams,
+	VKMusicAudioGetAudiosByArtistMethodParams,
 	VKMusicAudioGetByIdMethodParams,
 	VKMusicAudioGetMethodParams,
+	VKMusicAudioGetPlaylistByIdMethodParams,
 	VKMusicAudioPlaylist,
-	VKMusicAudioArtist,
 	VKMusicAudioSong,
-	VKMusicAPI,
 } from 'vk-music-api-wrapper'
 
 import { VKMusicPluginErrors } from './types'
@@ -25,7 +25,7 @@ export async function getPlaylistAndSongs(
 	let offset = 0
 
 	let response = await vk.audio.get({
-		count: 500,
+		count: 5000,
 		...params,
 		offset,
 	})
@@ -42,6 +42,7 @@ export async function getPlaylistAndSongs(
 
 	while (totalSongsCount > songs.length) {
 		response = await vk.audio.get({
+			count: 5000,
 			...params,
 			offset,
 		})
@@ -70,7 +71,7 @@ export async function getArtistAndSongs(
 	let offset = 0
 
 	let response = await vk.audio.getAudiosByArtist({
-		count: 500,
+		count: 5000,
 		...params,
 		offset,
 	})
@@ -87,6 +88,7 @@ export async function getArtistAndSongs(
 
 	while (totalSongsCount > songs.length) {
 		response = await vk.audio.getAudiosByArtist({
+			count: 5000,
 			...params,
 			offset,
 		})
@@ -100,6 +102,62 @@ export async function getArtistAndSongs(
 	}
 
 	return [artist, songs]
+}
+
+export async function getUserOrGroupSongs(
+	vk: VKMusicAPI,
+	screen_name: string
+): Promise<[owner_id: string, songs: VKMusicAudioSong[]]> {
+	const params = await vk.resolveScreenName(screen_name)
+
+	if (Array.isArray(params)) {
+		throw new Error(VKMusicPluginErrors.USER_OR_GROUP_NOT_FOUND)
+	}
+
+	if (!['group', 'user'].includes(params.type)) {
+		throw new Error(VKMusicPluginErrors.URL_NOT_SUPPORT)
+	}
+
+	const owner_id = `${params.type === 'group' ? '-' : ''}${params.object_id}`
+
+	let offset = 0
+
+	let response = await vk.audio.get({
+		count: 5000,
+		owner_id,
+		offset,
+	})
+
+	const songs = []
+	const totalSongsCount = response.count
+
+	if (!totalSongsCount) {
+		throw new Error(
+			params.type === 'group'
+				? VKMusicPluginErrors.GROUP_SONGS_NOT_FOUND
+				: VKMusicPluginErrors.USER_SONGS_NOT_FOUND
+		)
+	}
+
+	songs.push(...response.items)
+	offset += songs.length
+
+	while (totalSongsCount > songs.length) {
+		response = await vk.audio.get({
+			count: 5000,
+			owner_id,
+			offset,
+		})
+
+		if (!response || !response.items.length) {
+			break
+		}
+
+		songs.push(...response.items)
+		offset += songs.length
+	}
+
+	return [owner_id, songs]
 }
 
 export async function fetchSong(
