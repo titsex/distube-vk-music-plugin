@@ -19,14 +19,15 @@ Custom Distube plugin for VK Music support.
 | album    | https://vk.com/music/album/-2000892528_18892528 | ✅  |
 | artist   | https://vk.com/artist/nepridymal_mty0oty4odm2mw | ✅  |
 | audio    | https://vk.com/audio-2001624323_122624323       | ✅  |
-| group    | https://vk.com/titsex                           | ✅  |
-| user     | https://vk.com/ne_pridymal_group                | ✅  |
+| group    | https://vk.com/ne_pridymal_group                | ✅  |
+| user     | https://vk.com/titsex                           | ✅  |
 
 # Installation
 ```
 npm install distube-vk-music-plugin
 yarn add distube-vk-music-plugin
 pnpm add distube-vk-music-plugin
+bun add distube-vk-music-plugin
 ```
 
 # Using

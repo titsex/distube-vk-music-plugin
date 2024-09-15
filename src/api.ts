@@ -71,7 +71,7 @@ export async function getArtistAndSongs(
 	let offset = 0
 
 	let response = await vk.audio.getAudiosByArtist({
-		count: 5000,
+		count: 1000,
 		...params,
 		offset,
 	})
@@ -88,7 +88,7 @@ export async function getArtistAndSongs(
 
 	while (totalSongsCount > songs.length) {
 		response = await vk.audio.getAudiosByArtist({
-			count: 5000,
+			count: 1000,
 			...params,
 			offset,
 		})
@@ -179,7 +179,7 @@ export async function fetchRelatedSongs(
 ): Promise<VKMusicAudioSong[]> {
 	const response = await vk.audio.getRecommendations({
 		target_audio: params,
-		count: 10,
+		count: 1000,
 	})
 
 	if (!response || !response?.items) return []
