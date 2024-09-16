@@ -9,27 +9,18 @@
 	"directories": {
 		"lib": "src"
 	},
-	"files": [
-		"dist"
-	],
+	"files": ["dist"],
 	"scripts": {
 		"format": "biome format ./src",
 		"lint": "biome lint ./src",
 		"build": "tsc && tsup",
-		"test": "node --env-file=.env ./node_modules/vitest/vitest.mjs run --coverage --no-file-parallelism"
+		"test": "vitest run --coverage --no-file-parallelism"
 	},
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/titsex/distube-vk-music-plugin.git"
 	},
-	"keywords": [
-		"distube",
-		"plugin",
-		"vk",
-		"music",
-		"vkmusic",
-		"discord"
-	],
+	"keywords": ["distube", "plugin", "vk", "music", "vkmusic", "discord"],
 	"bugs": {
 		"url": "https://github.com/titsex/distube-vk-music-plugin/issues"
 	},
