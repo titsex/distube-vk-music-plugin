@@ -103,14 +103,18 @@ class VKMusicPlugin extends PlayableExtractorPlugin {
 		}
 	}
 
-	async getRelatedSongs<T>(song: VKMusicPluginSong<T>) {
+	async getRelatedSongs<T>(song: VKMusicPluginSong<T>, count?: number) {
 		const [owner_id, id, access_key] = song.id.split('_')
 
-		const songs = await fetchRelatedSongs(this.vk, {
-			owner_id,
-			id,
-			access_key,
-		})
+		const songs = await fetchRelatedSongs(
+			this.vk,
+			{
+				owner_id,
+				id,
+				access_key,
+			},
+			count
+		)
 
 		return songs.map((song) => new VKMusicPluginSong(this, song))
 	}

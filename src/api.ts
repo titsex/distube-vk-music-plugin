@@ -175,11 +175,12 @@ export async function fetchSong(
 
 export async function fetchRelatedSongs(
 	vk: VKMusicAPI,
-	params: VKMusicAudioGetByIdMethodParams
+	params: VKMusicAudioGetByIdMethodParams,
+	count = 1000
 ): Promise<VKMusicAudioSong[]> {
 	const response = await vk.audio.getRecommendations({
 		target_audio: params,
-		count: 1000,
+		count,
 	})
 
 	if (!response || !response?.items) return []

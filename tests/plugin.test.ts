@@ -13,7 +13,7 @@ describe('test plugin', async () => {
 
 	beforeAll(() => {
 		plugin = new VKMusicPlugin({
-			token: process.env.TOKEN!,
+			token: process.env.VK_API_TOKEN!,
 		})
 	})
 
@@ -56,7 +56,7 @@ describe('test plugin', async () => {
 
 		describe('test user/group url', () => {
 			test('test user url', async () => {
-				const url = 'https://vk.com/me11iodas'
+				const url = 'https://vk.com/titsex'
 
 				const response = await plugin.resolve(url, {})
 
@@ -64,7 +64,7 @@ describe('test plugin', async () => {
 			})
 
 			test('test group url', async () => {
-				const url = 'https://vk.com/metalhammer80'
+				const url = 'https://vk.com/powerwolf_fans'
 
 				const response = await plugin.resolve(url, {})
 
@@ -84,11 +84,12 @@ describe('test plugin', async () => {
 	test('test getRelatedSongs method', async () => {
 		const song = {
 			id: '-28905875_456281396_5087a041bc10bd334c',
-		} as VKMusicPluginSong<{}>
+		} as VKMusicPluginSong<unknown>
 
-		const response = await plugin.getRelatedSongs(song)
+		const response = await plugin.getRelatedSongs(song, 10)
 
 		expect(response).toBeInstanceOf(Array)
+		expect(response.length).toBeGreaterThan(0)
 		expect(response[0]).toBeInstanceOf(VKMusicPluginSong)
 	})
 
@@ -97,7 +98,7 @@ describe('test plugin', async () => {
 
 		const song = {
 			url,
-		} as VKMusicPluginSong<{}>
+		} as VKMusicPluginSong<unknown>
 
 		const response = plugin.getStreamURL(song)
 
