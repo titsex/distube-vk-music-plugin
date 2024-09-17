@@ -2,16 +2,14 @@
 	"name": "distube-vk-music-plugin",
 	"description": "A DisTube custom plugin for supporting VK Music.",
 	"author": "titsex",
-	"version": "2.0.2",
+	"version": "2.0.3",
 	"main": "./dist/plugin.js",
 	"types": "./dist/plugin.d.ts",
 	"exports": "./dist/plugin.js",
 	"directories": {
 		"lib": "src"
 	},
-	"files": [
-		"dist"
-	],
+	"files": ["dist"],
 	"scripts": {
 		"format": "biome format ./src",
 		"lint": "biome lint ./src",
@@ -22,14 +20,7 @@
 		"type": "git",
 		"url": "git+https://github.com/titsex/distube-vk-music-plugin.git"
 	},
-	"keywords": [
-		"distube",
-		"plugin",
-		"vk",
-		"music",
-		"vkmusic",
-		"discord"
-	],
+	"keywords": ["distube", "plugin", "vk", "music", "vkmusic", "discord"],
 	"bugs": {
 		"url": "https://github.com/titsex/distube-vk-music-plugin/issues"
 	},
