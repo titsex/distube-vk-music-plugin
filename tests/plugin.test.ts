@@ -100,7 +100,7 @@ describe('test plugin', async () => {
 			streamUrl,
 		} as VKMusicPluginSong<unknown>
 
-		const response = plugin.getStreamURL(song)
+		const response = await plugin.getStreamURL(song)
 
 		expect(response).toEqual(streamUrl)
 	})

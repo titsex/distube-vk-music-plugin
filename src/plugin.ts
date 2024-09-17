@@ -119,7 +119,7 @@ class VKMusicPlugin extends PlayableExtractorPlugin {
 		return songs.map((song) => new VKMusicPluginSong(this, song))
 	}
 
-	getStreamURL<T>(song: VKMusicPluginSong<T>) {
+	async getStreamURL<T>(song: VKMusicPluginSong<T>) {
 		if (!song.streamUrl) {
 			throw new DisTubeError(
 				VK_MUSIC_PLUGIN_SOURCE,
