@@ -94,14 +94,14 @@ describe('test plugin', async () => {
 	})
 
 	test('test getStreamURL method', async () => {
-		const url = 'https://vk.com/audio-2001624323_122624323'
+		const streamUrl = 'https://vk.com/audio-2001624323_122624323'
 
 		const song = {
-			url,
+			streamUrl,
 		} as VKMusicPluginSong<unknown>
 
 		const response = plugin.getStreamURL(song)
 
-		expect(response).toEqual(url)
+		expect(response).toEqual(streamUrl)
 	})
 })
