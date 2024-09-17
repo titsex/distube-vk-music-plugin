@@ -9,6 +9,7 @@ export enum VKMusicPluginErrors {
 	ARTIST_NOT_FOUND = 'The artist for the specified query was not found',
 	ARTIST_SONGS_NOT_FOUND = 'The artist does not have any songs on the specified link',
 	SONG_NOT_FOUND = 'Song on the specified link was not found',
+	SONG_STREAM_URL_NOT_FOUND = 'The song stream url was not found',
 	USER_OR_GROUP_NOT_FOUND = 'The user or community you specified was not found',
 	USER_SONGS_NOT_FOUND = "The user's songs were not found at the specified link",
 	GROUP_SONGS_NOT_FOUND = "The group's songs were not found at the specified link",

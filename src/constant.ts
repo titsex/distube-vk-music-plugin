@@ -1,4 +1,5 @@
 export const VK_MUSIC_PLUGIN_SOURCE = 'vk-music-plugin'
+export const VK_MUSIC_AUDIO_PAGE_URL = 'https://vk.com/audio'
 
 export const IS_PLAYLIST_OR_ALBUM_REGEX =
 	/(?:playlist|album)(?:\/|)((?:-|)\d+)_((?:-|)\d+)(?:_(\w+)|)/i

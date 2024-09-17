@@ -3,8 +3,10 @@ import {
 	IS_AUDIO_REGEX,
 	IS_PLAYLIST_OR_ALBUM_REGEX,
 	IS_USER_OR_GROUP_REGEX,
+	VK_MUSIC_AUDIO_PAGE_URL,
 } from './constant'
 
+import type { VKMusicAudioGetByIdMethodParams } from 'vk-music-api-wrapper'
 import type { LinkType } from './types'
 
 export function getLinkType(url: string): LinkType {
@@ -25,4 +27,9 @@ export function getParamsByURL(url: string, type: LinkType): string[] {
 	if (type === 'song') return url.match(IS_AUDIO_REGEX)!.slice(1, 4)
 
 	return url.match(IS_USER_OR_GROUP_REGEX)!.slice(1, 2)
+}
+
+export function getSongDirectUrl(params: VKMusicAudioGetByIdMethodParams): string {
+	const stringParams = `${params.owner_id}_${params.id}${params.access_key ? `_${params.access_key}` : ''}`
+	return `${VK_MUSIC_AUDIO_PAGE_URL}${stringParams}`
 }

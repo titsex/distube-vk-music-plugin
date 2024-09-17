@@ -120,11 +120,14 @@ class VKMusicPlugin extends PlayableExtractorPlugin {
 	}
 
 	getStreamURL<T>(song: VKMusicPluginSong<T>) {
-		if (!song.url) {
-			throw new DisTubeError(VK_MUSIC_PLUGIN_SOURCE, VKMusicPluginErrors.SONG_NOT_FOUND)
+		if (!song.streamUrl) {
+			throw new DisTubeError(
+				VK_MUSIC_PLUGIN_SOURCE,
+				VKMusicPluginErrors.SONG_STREAM_URL_NOT_FOUND
+			)
 		}
 
-		return song.url
+		return song.streamUrl
 	}
 }
 
